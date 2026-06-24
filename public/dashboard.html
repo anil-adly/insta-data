@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insta Audio Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #efe5d7;
+        --bg-elev: #fffaf4;
+        --text: #181410;
+        --muted: #675d51;
+        --border: #d9c8b1;
+        --accent: #c65a39;
+        --accent-strong: #9e4328;
+        --accent-2: #2f6d76;
+        --ok: #277a49;
+        --warn: #bb7a1d;
+        --error: #b54a34;
+        --info: #2d6cc2;
+        --shadow: 0 18px 40px rgba(53, 34, 14, 0.12);
+      }
+
+      :root[data-theme="dark"] {
+        --bg: #121416;
+        --bg-elev: #1c2024;
+        --text: #f3ede4;
+        --muted: #b5aca2;
+        --border: #39414a;
+        --accent: #ef8a5d;
+        --accent-strong: #d46e42;
+        --accent-2: #66b2bb;
+        --ok: #67d08f;
+        --warn: #edbc58;
+        --error: #ff9078;
+        --info: #8ac0ff;
+        --shadow: 0 18px 40px rgba(0, 0, 0, 0.42);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 10% 10%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),
+          radial-gradient(circle at 88% 10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 34%),
+          linear-gradient(180deg, color-mix(in srgb, var(--bg) 94%, white 6%), color-mix(in srgb, var(--bg) 86%, #000 14%));
+        background-attachment: fixed;
+        min-height: 100vh;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        letter-spacing: 0.2px;
+      }
+
+      .wrap {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 24px 16px 38px;
+      }
+
+      .panel {
+        background: color-mix(in srgb, var(--bg-elev) 95%, white 5%);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: center;
+        padding: 22px 24px;
+        margin-bottom: 14px;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: -20% auto auto -8%;
+        width: 280px;
+        height: 280px;
+        border-radius: 50%;
+        background: radial-gradient(circle, color-mix(in srgb, var(--accent-2) 22%, transparent), transparent 72%);
+        pointer-events: none;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: auto -8% -34% auto;
+        width: 280px;
+        height: 280px;
+        border-radius: 50%;
+        background: radial-gradient(circle, color-mix(in srgb, var(--accent) 18%, transparent), transparent 72%);
+        pointer-events: none;
+      }
+
+      .hero-main,
+      .hero-side {
+        position: relative;
+        z-index: 1;
+      }
+
+      .hero-main {
+        flex: 1;
+        min-width: 320px;
+      }
+
+      .hero-side {
+        width: 300px;
+        min-width: 220px;
+      }
+
+      h1 {
+        font-size: clamp(34px, 3.8vw, 52px);
+        line-height: 0.95;
+        max-width: 860px;
+      }
+
+      .subline {
+        margin-top: 10px;
+        font-size: 18px;
+        color: var(--muted);
+      }
+
+      .hero-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .stat-pill {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--bg-elev) 84%, var(--accent-2) 16%);
+      }
+
+      .stat-pill strong {
+        font: 700 16px/1 "Space Grotesk", sans-serif;
+      }
+
+      .stat-pill span {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .filters {
+        padding: 16px;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(4, minmax(180px, 1fr));
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .field.search-wide {
+        grid-column: span 2;
+      }
+
+      .field.actions-wide {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      input,
+      select,
+      button {
+        height: 44px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-elev);
+        color: var(--text);
+        font: inherit;
+        padding: 0 12px;
+      }
+
+      input::placeholder {
+        color: color-mix(in srgb, var(--muted) 78%, transparent);
+      }
+
+      button {
+        cursor: pointer;
+        transition: transform 130ms ease, filter 130ms ease;
+      }
+
+      button:hover,
+      .action-link:hover,
+      .action-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.02);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        color: #fff;
+        border: 0;
+      }
+
+      .btn-alt {
+        background: color-mix(in srgb, var(--accent) 10%, var(--bg-elev));
+      }
+
+      .btn-ghost {
+        background: color-mix(in srgb, var(--accent-2) 16%, var(--bg-elev));
+      }
+
+      .action-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 10px;
+      }
+
+      .action-row button {
+        min-width: 160px;
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      .cards {
+        margin-top: 14px;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(4, minmax(170px, 1fr));
+      }
+
+      .card {
+        min-height: 128px;
+        padding: 16px;
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--bg-elev) 98%, white 2%), color-mix(in srgb, var(--bg-elev) 88%, var(--accent-2) 12%));
+      }
+
+      .card .label {
+        color: var(--muted);
+      }
+
+      .card .v {
+        margin-top: 8px;
+        font: 700 42px/1 "Space Grotesk", sans-serif;
+      }
+
+      .grid {
+        margin-top: 14px;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .section {
+        padding: 14px;
+        overflow: auto;
+      }
+
+      .section h3 {
+        margin-bottom: 10px;
+        font-size: 22px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        padding: 9px 6px;
+        font-size: 13px;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        background: var(--bg-elev);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      tbody tr:nth-child(even) {
+        background: color-mix(in srgb, var(--bg-elev) 95%, var(--accent-2) 5%);
+      }
+
+      tbody tr:hover {
+        background: color-mix(in srgb, var(--bg-elev) 87%, var(--accent) 13%);
+      }
+
+      .data {
+        margin-top: 12px;
+      }
+
+      .data .section {
+        max-height: 55vh;
+      }
+
+      .pager {
+        margin-top: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .url {
+        max-width: 360px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .chip {
+        display: inline-block;
+        padding: 3px 9px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .status-downloaded {
+        color: var(--ok);
+        border-color: color-mix(in srgb, var(--ok) 45%, var(--border));
+      }
+
+      .status-failed {
+        color: var(--error);
+        border-color: color-mix(in srgb, var(--error) 45%, var(--border));
+      }
+
+      .status-processing {
+        color: var(--info);
+        border-color: color-mix(in srgb, var(--info) 45%, var(--border));
+      }
+
+      .status-discovered {
+        color: var(--warn);
+        border-color: color-mix(in srgb, var(--warn) 45%, var(--border));
+      }
+
+      .actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .action-link,
+      .action-btn {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        height: 30px;
+        padding: 0 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--bg-elev) 88%, var(--accent-2) 12%);
+        color: var(--text);
+        font-size: 12px;
+        text-decoration: none;
+      }
+
+      .action-btn {
+        font-family: inherit;
+      }
+
+      .is-disabled {
+        pointer-events: none;
+        opacity: 0.45;
+      }
+
+      .mini-player {
+        position: sticky;
+        bottom: 10px;
+        margin-top: 12px;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid color-mix(in srgb, var(--accent-2) 35%, var(--border));
+        background:
+          linear-gradient(135deg, color-mix(in srgb, var(--bg-elev) 94%, white 6%), color-mix(in srgb, var(--bg-elev) 82%, var(--accent-2) 18%));
+      }
+
+      .mini-player.hidden {
+        display: none;
+      }
+
+      .player-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .player-title {
+        font: 600 13px/1.3 "Space Grotesk", sans-serif;
+      }
+
+      .player-subtitle {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .player-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .player-controls audio {
+        width: min(540px, 60vw);
+        height: 34px;
+      }
+
+      @media (max-width: 1024px) {
+        .hero {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .hero-side {
+          width: 100%;
+        }
+
+        .filters {
+          grid-template-columns: repeat(2, minmax(160px, 1fr));
+        }
+
+        .field.search-wide {
+          grid-column: span 2;
+        }
+
+        .cards {
+          grid-template-columns: repeat(2, minmax(170px, 1fr));
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .wrap {
+          padding: 16px 12px 28px;
+        }
+
+        .hero {
+          padding: 18px;
+        }
+
+        .filters {
+          grid-template-columns: 1fr;
+        }
+
+        .field.search-wide,
+        .field.actions-wide {
+          grid-column: span 1;
+        }
+
+        .cards {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .url {
+          max-width: 220px;
+        }
+
+        .action-row button,
+        .action-row .spacer {
+          width: 100%;
+          min-width: 100%;
+        }
+
+        .player-controls {
+          flex-wrap: wrap;
+        }
+
+        .player-controls audio {
+          width: min(100%, 92vw);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="panel hero">
+        <div class="hero-main">
+          <h1>Instagram Download Reports</h1>
+          <div class="subline" id="subtitle">Realtime from data/downloads.sqlite</div>
+          <div class="hero-pills">
+            <div class="stat-pill"><strong id="heroTotal">0</strong><span>Total</span></div>
+            <div class="stat-pill"><strong id="heroDownloaded">0</strong><span>Downloaded</span></div>
+            <div class="stat-pill"><strong id="heroPending">0</strong><span>Pending</span></div>
+          </div>
+        </div>
+        <div class="hero-side field">
+          <label>Theme</label>
+          <select id="themeSelect">
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel filters">
+        <div class="field">
+          <label>Topic</label>
+          <select id="topic"></select>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="status">
+            <option value="">All</option>
+            <option value="discovered">discovered</option>
+            <option value="processing">processing</option>
+            <option value="downloaded">downloaded</option>
+            <option value="failed">failed</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Since date/time</label>
+          <input id="since" type="datetime-local" />
+        </div>
+        <div class="field">
+          <label>Relative days</label>
+          <input id="days" type="number" min="1" placeholder="eg. 7" />
+        </div>
+        <div class="field">
+          <label>Min likes</label>
+          <input id="minLikes" type="number" min="1" step="1" placeholder="eg. 1000000" />
+        </div>
+        <div class="field search-wide">
+          <label>Search text</label>
+          <input id="q" type="text" placeholder="url/caption/uploader" />
+        </div>
+        <div class="field">
+          <label>Rows per page</label>
+          <input id="limit" type="number" min="1" max="200" value="25" />
+        </div>
+        <div class="field actions-wide">
+          <label>Actions</label>
+          <div class="action-row">
+            <button id="apply" class="btn-primary">Apply Filters</button>
+            <button id="reset" class="btn-alt">Reset</button>
+            <div class="spacer"></div>
+            <button id="exportCsv" class="btn-ghost">Export CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cards" id="cards"></div>
+
+      <div class="panel section data">
+        <h3>All rows</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Topic</th>
+              <th>Likes</th>
+              <th>Views</th>
+              <th>Comments</th>
+              <th>Attempts</th>
+              <th>Updated</th>
+              <th>Post URL</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rowsBody"></tbody>
+        </table>
+        <div class="pager">
+          <button id="prev">Previous</button>
+          <div id="pageText" class="subline" style="font-size: 14px; margin: 0"></div>
+          <button id="next">Next</button>
+        </div>
+      </div>
+
+      <div class="panel section" style="margin-top: 12px">
+        <h3>Top liked posts</h3>
+        <table>
+          <thead>
+            <tr><th>Likes</th><th>Views</th><th>Comments</th><th>Status</th><th>Post</th></tr>
+          </thead>
+          <tbody id="topBody"></tbody>
+        </table>
+      </div>
+
+      <div class="panel mini-player hidden" id="miniPlayer">
+        <div class="player-meta">
+          <div class="player-title">Now playing</div>
+          <div class="player-subtitle" id="nowPlaying">No audio selected</div>
+        </div>
+        <div class="player-controls">
+          <audio id="audioEl" controls preload="metadata"></audio>
+          <button id="openAudioTab" class="btn-ghost" type="button">Open in Tab</button>
+          <button id="stopAudio" class="btn-alt" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const state = { page: 1, totalPages: 1 };
+
+      const el = {
+        topic: document.getElementById("topic"),
+        status: document.getElementById("status"),
+        since: document.getElementById("since"),
+        days: document.getElementById("days"),
+        minLikes: document.getElementById("minLikes"),
+        q: document.getElementById("q"),
+        limit: document.getElementById("limit"),
+        apply: document.getElementById("apply"),
+        reset: document.getElementById("reset"),
+        exportCsv: document.getElementById("exportCsv"),
+        cards: document.getElementById("cards"),
+        rowsBody: document.getElementById("rowsBody"),
+        topBody: document.getElementById("topBody"),
+        pageText: document.getElementById("pageText"),
+        prev: document.getElementById("prev"),
+        next: document.getElementById("next"),
+        subtitle: document.getElementById("subtitle"),
+        themeSelect: document.getElementById("themeSelect"),
+        heroTotal: document.getElementById("heroTotal"),
+        heroDownloaded: document.getElementById("heroDownloaded"),
+        heroPending: document.getElementById("heroPending"),
+        miniPlayer: document.getElementById("miniPlayer"),
+        audioEl: document.getElementById("audioEl"),
+        nowPlaying: document.getElementById("nowPlaying"),
+        openAudioTab: document.getElementById("openAudioTab"),
+        stopAudio: document.getElementById("stopAudio"),
+      };
+
+      let currentAudioHref = "";
+
+      function applyTheme(value) {
+        localStorage.setItem("dashboard-theme", value);
+        const root = document.documentElement;
+        if (value === "system") {
+          root.removeAttribute("data-theme");
+        } else {
+          root.setAttribute("data-theme", value);
+        }
+      }
+
+      const savedTheme = localStorage.getItem("dashboard-theme") || "system";
+      el.themeSelect.value = savedTheme;
+      applyTheme(savedTheme);
+      el.themeSelect.addEventListener("change", () => applyTheme(el.themeSelect.value));
+
+      function num(value) {
+        if (typeof value !== "number" || !Number.isFinite(value)) return "-";
+        return new Intl.NumberFormat("en-US").format(value);
+      }
+
+      function esc(value) {
+        return (value ?? "").toString().replace(/[&<>\"]/g, (c) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+        }[c]));
+      }
+
+      function statusClass(status) {
+        const value = (status || "").toLowerCase();
+        if (value === "downloaded") return "status-downloaded";
+        if (value === "failed") return "status-failed";
+        if (value === "processing") return "status-processing";
+        if (value === "discovered") return "status-discovered";
+        return "";
+      }
+
+      function currentQuery() {
+        const params = new URLSearchParams();
+        if (el.topic.value) params.set("topic", el.topic.value);
+        if (el.status.value) params.set("status", el.status.value);
+        if (el.since.value) params.set("since", el.since.value);
+        if (el.days.value) params.set("days", el.days.value);
+        if (el.minLikes.value) params.set("minLikes", el.minLikes.value);
+        if (el.q.value.trim()) params.set("q", el.q.value.trim());
+        params.set("limit", el.limit.value || "25");
+        params.set("page", String(state.page));
+        return params;
+      }
+
+      function buildAudioHref(audioPath) {
+        const value = (audioPath || "").trim();
+        if (!value) return "";
+        return `/api/audio?path=${encodeURIComponent(value)}`;
+      }
+
+      function stopMiniPlayer() {
+        el.audioEl.pause();
+        el.audioEl.removeAttribute("src");
+        el.audioEl.load();
+        currentAudioHref = "";
+        el.nowPlaying.textContent = "No audio selected";
+        el.miniPlayer.classList.add("hidden");
+      }
+
+      async function playAudioInMiniPlayer(href, postUrl) {
+        if (!href) return;
+        el.audioEl.src = href;
+        el.nowPlaying.textContent = postUrl || "Selected audio";
+        el.miniPlayer.classList.remove("hidden");
+        currentAudioHref = href;
+        try {
+          await el.audioEl.play();
+        } catch {
+        }
+      }
+
+      async function loadDashboard() {
+        const res = await fetch(`/api/dashboard?${currentQuery().toString()}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load dashboard");
+
+        state.totalPages = data.meta.totalPages || 1;
+
+        el.cards.innerHTML = `
+          <div class="panel card"><div class="label">Filtered total</div><div class="v">${num(data.summary.total)}</div></div>
+          <div class="panel card"><div class="label">Downloaded</div><div class="v">${num(data.summary.downloaded)}</div></div>
+          <div class="panel card"><div class="label">Not downloaded</div><div class="v">${num(data.summary.notDownloaded)}</div></div>
+          <div class="panel card"><div class="label">Rows this page</div><div class="v">${num(data.rows.length)}</div></div>
+        `;
+
+        el.heroTotal.textContent = num(data.summary.total);
+        el.heroDownloaded.textContent = num(data.summary.downloaded);
+        el.heroPending.textContent = num(data.summary.notDownloaded);
+
+        el.topBody.innerHTML = data.topLikedPosts.map((row) => `
+          <tr>
+            <td>${num(row.like_count)}</td>
+            <td>${num(row.view_count)}</td>
+            <td>${num(row.comment_count)}</td>
+            <td>${esc(row.status)}</td>
+            <td class="url"><a href="${esc(row.post_url)}" target="_blank" rel="noreferrer">${esc(row.post_url)}</a></td>
+          </tr>
+        `).join("") || `<tr><td colspan="5">No liked posts</td></tr>`;
+
+        el.rowsBody.innerHTML = data.rows.map((row) => {
+          const audioHref = buildAudioHref(row.audio_path);
+          return `
+            <tr>
+              <td><span class="chip ${statusClass(row.status)}">${esc(row.status)}</span></td>
+              <td>${esc(row.topic || "-")}</td>
+              <td>${num(row.like_count)}</td>
+              <td>${num(row.view_count)}</td>
+              <td>${num(row.comment_count)}</td>
+              <td>${num(row.attempts)}</td>
+              <td>${esc(row.updated_at || "-")}</td>
+              <td class="url"><a href="${esc(row.post_url)}" target="_blank" rel="noreferrer">${esc(row.post_url)}</a></td>
+              <td>
+                <div class="actions">
+                  <a class="action-link" href="${esc(row.post_url)}" target="_blank" rel="noreferrer">Instagram</a>
+                  <button
+                    class="action-btn action-play ${audioHref ? "" : "is-disabled"}"
+                    type="button"
+                    ${audioHref ? `data-audio-href="${esc(audioHref)}" data-post-url="${esc(row.post_url)}"` : "disabled"}
+                  >Play Audio</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join("") || `<tr><td colspan="9">No rows</td></tr>`;
+
+        el.pageText.textContent = `Page ${state.page} of ${state.totalPages} (total ${num(data.meta.totalFiltered)})`;
+        el.prev.disabled = state.page <= 1;
+        el.next.disabled = state.page >= state.totalPages;
+
+        const existingTopics = new Set(Array.from(el.topic.options).map((option) => option.value));
+        if (!existingTopics.size || existingTopics.size === 1) {
+          const current = el.topic.value;
+          const topicOptions = ['<option value="">All topics</option>']
+            .concat(data.topics.map((item) => `<option value="${esc(item.topic)}">${esc(item.topic)} (${num(item.count)})</option>`))
+            .join("");
+          el.topic.innerHTML = topicOptions;
+          el.topic.value = current;
+        }
+
+        el.subtitle.textContent = `Updated ${new Date().toLocaleString()} | SQLite: data/downloads.sqlite`;
+      }
+
+      async function refresh() {
+        el.apply.disabled = true;
+        el.apply.textContent = "Loading...";
+        try {
+          await loadDashboard();
+        } catch (error) {
+          alert(error.message);
+        } finally {
+          el.apply.disabled = false;
+          el.apply.textContent = "Apply Filters";
+        }
+      }
+
+      el.apply.addEventListener("click", () => {
+        state.page = 1;
+        refresh();
+      });
+
+      el.reset.addEventListener("click", () => {
+        el.topic.value = "";
+        el.status.value = "";
+        el.since.value = "";
+        el.days.value = "";
+        el.minLikes.value = "";
+        el.q.value = "";
+        el.limit.value = "25";
+        state.page = 1;
+        refresh();
+      });
+
+      el.exportCsv.addEventListener("click", () => {
+        const params = currentQuery();
+        params.delete("page");
+        window.open(`/api/dashboard/export.csv?${params.toString()}`, "_blank", "noopener,noreferrer");
+      });
+
+      el.prev.addEventListener("click", () => {
+        if (state.page > 1) {
+          state.page -= 1;
+          refresh();
+        }
+      });
+
+      el.next.addEventListener("click", () => {
+        if (state.page < state.totalPages) {
+          state.page += 1;
+          refresh();
+        }
+      });
+
+      el.rowsBody.addEventListener("click", (event) => {
+        const btn = event.target.closest(".action-play");
+        if (!btn) return;
+        playAudioInMiniPlayer(btn.getAttribute("data-audio-href") || "", btn.getAttribute("data-post-url") || "");
+      });
+
+      el.openAudioTab.addEventListener("click", () => {
+        if (!currentAudioHref) return;
+        window.open(currentAudioHref, "_blank", "noopener,noreferrer");
+      });
+
+      el.stopAudio.addEventListener("click", () => {
+        stopMiniPlayer();
+      });
+
+      refresh();
+    </script>
+  </body>
+</html>

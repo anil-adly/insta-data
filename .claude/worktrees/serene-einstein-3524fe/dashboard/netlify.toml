@@ -1,0 +1,33 @@
+# Netlify config for the static Insta Audio dashboard.
+#
+# This site is pre-built: `data.json` and `audio/` are generated locally by
+# `node dashboard/build.mjs` and committed. Netlify only serves the files, so
+# the build command is a no-op (Netlify has no access to the SQLite DB).
+#
+# In the Netlify UI set:
+#   Base directory:    dashboard
+#   Build command:     (leave as configured below)
+#   Publish directory: dashboard
+#
+# Paths below are relative to the base directory (dashboard/).
+
+[build]
+  publish = "."
+  command = "echo 'Static dashboard already built — run node dashboard/build.mjs locally to refresh data.'"
+
+# Node version is irrelevant for serving static files, but pin it so the build
+# environment is deterministic if a build step is ever added.
+[build.environment]
+  NODE_VERSION = "22"
+
+# Long-lived cache for audio: filenames are content-stable (Instagram shortcodes).
+[[headers]]
+  for = "/audio/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+# data.json changes on every rebuild — always revalidate.
+[[headers]]
+  for = "/data.json"
+  [headers.values]
+    Cache-Control = "no-cache"
