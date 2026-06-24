@@ -44,8 +44,12 @@ const db = new Database(sqlitePath, { readonly: true });
 
 // Pull every column so the client has all fields the server used to expose
 // (post_url, shortcode, caption, uploader, metrics, timestamps, etc.).
+// Only published rows: the dashboard is a "downloaded" report, so we never
+// export discovered/processing/failed rows (they have no audio to play).
 const rows = db
-  .prepare(`SELECT * FROM downloads ORDER BY datetime(updated_at) DESC`)
+  .prepare(
+    `SELECT * FROM downloads WHERE status = 'downloaded' ORDER BY datetime(updated_at) DESC`,
+  )
   .all();
 
 db.close();

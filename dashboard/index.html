@@ -189,8 +189,55 @@
       }
 
       label {
+        font-size: 12.5px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        color: color-mix(in srgb, var(--text) 62%, var(--muted));
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+      }
+
+      .filters-head {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: baseline;
+        gap: 10px 14px;
+        flex-wrap: wrap;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 2px;
+      }
+
+      .filters-head h3 {
+        margin: 0;
+        font: 700 15px/1.2 "Space Grotesk", sans-serif;
+      }
+
+      .filters-hint {
         font-size: 12px;
         color: var(--muted);
+      }
+
+      th.sortable {
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+        transition: background 120ms ease, color 120ms ease;
+      }
+
+      th.sortable:hover {
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        color: var(--accent-strong);
+      }
+
+      th.sortable.active {
+        color: var(--accent-strong);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
       }
 
       input,
@@ -537,6 +584,10 @@
       </div>
 
       <div class="panel filters">
+        <div class="filters-head">
+          <h3>Filters &amp; sorting</h3>
+          <span class="filters-hint">Sorted by most likes by default — change “Sort by” / “Order”, or click any column header.</span>
+        </div>
         <div class="field">
           <label>Topic</label>
           <select id="topic"></select>
@@ -552,6 +603,22 @@
           </select>
         </div>
         <div class="field">
+          <label>Sort by</label>
+          <select id="sortBy">
+            <option value="like_count">Likes</option>
+            <option value="view_count">Views</option>
+            <option value="comment_count">Comments</option>
+            <option value="updated_at">Updated</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Order</label>
+          <select id="sortDir">
+            <option value="desc">High → Low</option>
+            <option value="asc">Low → High</option>
+          </select>
+        </div>
+        <div class="field">
           <label>Since date/time</label>
           <input id="since" type="datetime-local" />
         </div>
@@ -563,13 +630,13 @@
           <label>Min likes</label>
           <input id="minLikes" type="number" min="1" step="1" placeholder="eg. 1000000" />
         </div>
-        <div class="field search-wide">
-          <label>Search text</label>
-          <input id="q" type="text" placeholder="url/caption/uploader" />
-        </div>
         <div class="field">
           <label>Rows per page</label>
           <input id="limit" type="number" min="1" max="200" value="25" />
+        </div>
+        <div class="field search-wide">
+          <label>Search text</label>
+          <input id="q" type="text" placeholder="url/caption/uploader" />
         </div>
         <div class="field actions-wide">
           <label>Actions</label>
@@ -653,7 +720,7 @@
     </div>
 
     <script>
-      const state = { page: 1, totalPages: 1, sort: "updated_at", dir: "desc" };
+      const state = { page: 1, totalPages: 1, sort: "like_count", dir: "desc" };
 
       const el = {
         topic: document.getElementById("topic"),
@@ -663,6 +730,8 @@
         minLikes: document.getElementById("minLikes"),
         q: document.getElementById("q"),
         limit: document.getElementById("limit"),
+        sortBy: document.getElementById("sortBy"),
+        sortDir: document.getElementById("sortDir"),
         apply: document.getElementById("apply"),
         reset: document.getElementById("reset"),
         exportCsv: document.getElementById("exportCsv"),
@@ -1009,8 +1078,12 @@
             th.setAttribute("data-label", base);
           }
           const active = th.getAttribute("data-sort") === state.sort;
+          th.classList.toggle("active", active);
           th.textContent = base + (active ? (state.dir === "asc" ? " ▲" : " ▼") : "");
         });
+        // Keep the "Sort by" / "Order" dropdowns in sync with header clicks.
+        if (el.sortBy) el.sortBy.value = state.sort;
+        if (el.sortDir) el.sortDir.value = state.dir;
       }
 
       async function refresh() {
@@ -1040,8 +1113,20 @@
         el.q.value = "";
         el.limit.value = "25";
         state.page = 1;
-        state.sort = "updated_at";
+        state.sort = "like_count";
         state.dir = "desc";
+        refresh();
+      });
+
+      el.sortBy.addEventListener("change", () => {
+        state.sort = el.sortBy.value;
+        state.page = 1;
+        refresh();
+      });
+
+      el.sortDir.addEventListener("change", () => {
+        state.dir = el.sortDir.value;
+        state.page = 1;
         refresh();
       });
 
