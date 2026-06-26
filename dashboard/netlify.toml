@@ -39,3 +39,9 @@
   to = "https://media-api.devwork.in/v1/media/:splat"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/api/jobs/*"
+  to = "https://media-api.devwork.in/v1/jobs/:splat"
+  status = 200
+  force = true

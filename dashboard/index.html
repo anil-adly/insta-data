@@ -1324,7 +1324,7 @@
       async function pollJob(jobId) {
         for (let attempt = 0; attempt < 90; attempt++) {
           await new Promise((r) => setTimeout(r, 2000));
-          const res = await fetch(`${MEDIA_API}/api/media/jobs/${jobId}`);
+          const res = await fetch(`${MEDIA_API}/api/jobs/${jobId}`);
           if (!res.ok) throw new Error(`Poll failed (HTTP ${res.status})`);
           const data = await res.json();
           const job = data.job || data;
