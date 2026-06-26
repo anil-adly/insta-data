@@ -686,6 +686,16 @@
         return new Intl.NumberFormat("en-US").format(value);
       }
 
+      // Instagram/YouTube-style short counts: 1,737,888 -> "1.7M", 44,867 -> "44.9K"
+      const compactFormatter = new Intl.NumberFormat("en-US", {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      });
+      function compactNum(value) {
+        if (typeof value !== "number" || !Number.isFinite(value)) return "-";
+        return compactFormatter.format(value);
+      }
+
       function esc(value) {
         return (value ?? "").toString().replace(/[&<>\"]/g, (c) => ({
           "&": "&amp;",
@@ -764,9 +774,9 @@
 
         el.topBody.innerHTML = data.topLikedPosts.map((row) => `
           <tr>
-            <td>${num(row.like_count)}</td>
-            <td>${num(row.view_count)}</td>
-            <td>${num(row.comment_count)}</td>
+            <td title="${num(row.like_count)}">${compactNum(row.like_count)}</td>
+            <td title="${num(row.view_count)}">${compactNum(row.view_count)}</td>
+            <td title="${num(row.comment_count)}">${compactNum(row.comment_count)}</td>
             <td>${esc(row.status)}</td>
             <td class="url"><a href="${esc(row.post_url)}" target="_blank" rel="noreferrer">${esc(row.post_url)}</a></td>
           </tr>
@@ -778,9 +788,9 @@
             <tr>
               <td><span class="chip ${statusClass(row.status)}">${esc(row.status)}</span></td>
               <td>${esc(row.topic || "-")}</td>
-              <td>${num(row.like_count)}</td>
-              <td>${num(row.view_count)}</td>
-              <td>${num(row.comment_count)}</td>
+              <td title="${num(row.like_count)}">${compactNum(row.like_count)}</td>
+              <td title="${num(row.view_count)}">${compactNum(row.view_count)}</td>
+              <td title="${num(row.comment_count)}">${compactNum(row.comment_count)}</td>
               <td>${num(row.attempts)}</td>
               <td>${esc(row.updated_at || "-")}</td>
               <td class="url"><a href="${esc(row.post_url)}" target="_blank" rel="noreferrer">${esc(row.post_url)}</a></td>
