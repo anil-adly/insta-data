@@ -558,7 +558,96 @@
         .player-controls audio {
           width: min(100%, 92vw);
         }
+
+        .dl-row {
+          flex-direction: column;
+        }
+
+        .dl-row select {
+          width: 100%;
+        }
       }
+
+      /* ── Downloader panel ── */
+      .downloader-panel {
+        margin-bottom: 12px;
+        padding: 20px 24px;
+      }
+
+      .downloader-panel h3 {
+        margin-bottom: 14px;
+        font-size: 17px;
+      }
+
+      .dl-row {
+        display: flex;
+        gap: 10px;
+        align-items: stretch;
+      }
+
+      .dl-row input[type="url"] {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .dl-row select {
+        width: 120px;
+        flex-shrink: 0;
+      }
+
+      .dl-status {
+        margin-top: 12px;
+        padding: 11px 16px;
+        border-radius: 10px;
+        font-size: 14px;
+        line-height: 1.5;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .dl-status.pending {
+        background: color-mix(in srgb, var(--warn) 14%, transparent);
+        border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+        color: var(--warn);
+      }
+
+      .dl-status.ok {
+        background: color-mix(in srgb, var(--ok) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--ok) 28%, transparent);
+        color: var(--ok);
+      }
+
+      .dl-status.err {
+        background: color-mix(in srgb, var(--error) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--error) 28%, transparent);
+        color: var(--error);
+      }
+
+      .dl-status a {
+        color: inherit;
+        font-weight: 600;
+      }
+
+      .dl-status .dl-save {
+        margin-left: 10px;
+        text-decoration: underline;
+        white-space: nowrap;
+      }
+
+      .dl-spinner {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid currentColor;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
     </style>
   </head>
   <body>
@@ -581,6 +670,19 @@
             <option value="dark">Dark</option>
           </select>
         </div>
+      </div>
+
+      <div class="panel section downloader-panel">
+        <h3>Download Media</h3>
+        <div class="dl-row">
+          <input id="dlUrl" type="url" placeholder="Paste Instagram, YouTube Shorts, or TikTok URL…" />
+          <select id="dlFormat">
+            <option value="audio">Audio (.m4a)</option>
+            <option value="video">Video (best)</option>
+          </select>
+          <button id="dlBtn" class="btn-primary">Download</button>
+        </div>
+        <div id="dlStatus" class="dl-status hidden"></div>
       </div>
 
       <div class="panel filters">
@@ -754,6 +856,10 @@
         nowPlaying: document.getElementById("nowPlaying"),
         openAudioTab: document.getElementById("openAudioTab"),
         stopAudio: document.getElementById("stopAudio"),
+        dlUrl: document.getElementById("dlUrl"),
+        dlFormat: document.getElementById("dlFormat"),
+        dlBtn: document.getElementById("dlBtn"),
+        dlStatus: document.getElementById("dlStatus"),
       };
 
       let currentAudioHref = "";
@@ -1203,6 +1309,81 @@
       el.stopAudio.addEventListener("click", () => {
         stopMiniPlayer();
       });
+
+      // ── Media downloader ──────────────────────────────────────────────────────
+      const MEDIA_API = "https://media-api.devwork.in";
+
+      function showDlStatus(cls, html) {
+        el.dlStatus.className = `dl-status ${cls}`;
+        el.dlStatus.innerHTML = html;
+        el.dlStatus.classList.remove("hidden");
+      }
+
+      async function pollJob(jobId) {
+        for (let attempt = 0; attempt < 90; attempt++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const res = await fetch(`${MEDIA_API}/v1/media/jobs/${jobId}`);
+          if (!res.ok) throw new Error(`Poll failed (HTTP ${res.status})`);
+          const data = await res.json();
+          const job = data.job || data;
+          if (job.status === "completed") return job;
+          if (job.status === "failed") throw new Error(job.error || "Download failed on server");
+          showDlStatus("pending", `<span class="dl-spinner"></span> Downloading… ${job.progress != null ? job.progress + "%" : ""}`);
+        }
+        throw new Error("Timed out waiting for download (3 min)");
+      }
+
+      el.dlBtn.addEventListener("click", async () => {
+        const url = (el.dlUrl.value || "").trim();
+        if (!url) { el.dlUrl.focus(); return; }
+
+        const isAudio = el.dlFormat.value === "audio";
+        el.dlBtn.disabled = true;
+        showDlStatus("pending", '<span class="dl-spinner"></span> Submitting job…');
+
+        try {
+          const res = await fetch(`${MEDIA_API}/v1/media/download`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              url,
+              format: isAudio ? "audio" : "best",
+              mode: isAudio ? "audio" : "video",
+            }),
+          });
+          if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(`API error (HTTP ${res.status})${text ? ": " + text.slice(0, 120) : ""}`);
+          }
+          const data = await res.json();
+          const job = data.job || data;
+
+          let completed = job.status === "completed" ? job : await pollJob(job.id);
+
+          const fileUrl = completed.file?.url;
+          const title = esc(completed.media?.title || url);
+          const sizeMb = completed.file?.sizeBytes
+            ? ` <span style="opacity:.7">(${(completed.file.sizeBytes / 1048576).toFixed(1)} MB)</span>`
+            : "";
+          const ext = isAudio ? ".m4a" : ".mp4";
+          const safeName = (completed.media?.title || "download").replace(/[^a-z0-9_\-\s]/gi, "").trim().replace(/\s+/g, "_").slice(0, 80) + ext;
+
+          showDlStatus(
+            "ok",
+            `✅ Ready — <a href="${fileUrl}" target="_blank" rel="noopener">${title}</a>${sizeMb}`
+            + `&nbsp;<a class="dl-save" href="${fileUrl}" download="${esc(safeName)}">Save file ↓</a>`,
+          );
+        } catch (err) {
+          showDlStatus("err", `❌ ${esc(err.message)}`);
+        } finally {
+          el.dlBtn.disabled = false;
+        }
+      });
+
+      el.dlUrl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") el.dlBtn.click();
+      });
+      // ─────────────────────────────────────────────────────────────────────────
 
       async function bootstrap() {
         try {
