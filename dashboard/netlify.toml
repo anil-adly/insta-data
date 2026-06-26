@@ -31,3 +31,11 @@
   for = "/data.json"
   [headers.values]
     Cache-Control = "no-cache"
+
+# Proxy /api/media/* → media-api.devwork.in so the browser avoids CORS.
+# Netlify makes the upstream request server-side; the browser only sees freq-dl.netlify.app.
+[[redirects]]
+  from = "/api/media/*"
+  to = "https://media-api.devwork.in/v1/media/:splat"
+  status = 200
+  force = true
